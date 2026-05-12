@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
 
-const SIGNAL_URL = "https://YOUR-RENDER-URL.onrender.com";
+const SIGNAL_URL = "https://ghost-chat-signal.onrender.com";
 
 export default function Home() {
   const [myId, setMyId] = useState("");
