@@ -54,36 +54,41 @@ export default function Home() {
 
     return () => {
       socket.disconnect();
+      peerRef.current?.close();
     };
   }, []);
 
   function createPeer(remoteId: string) {
-  const peer = new RTCPeerConnection({
-    iceServers: [
-      { urls: "stun:stun.l.google.com:19302" },
-      { urls: "stun:global.stun.twilio.com:3478" }
-    ]
-  });
+    const peer = new RTCPeerConnection({
+      iceServers: [
+        { urls: "stun:stun.l.google.com:19302" },
+        { urls: "stun:global.stun.twilio.com:3478" }
+      ]
+    });
 
-  peer.onicecandidate = (e) => {
-    if (e.candidate) {
-      socketRef.current?.emit("ice-candidate", {
-        to: remoteId,
-        candidate: e.candidate,
-      });
-    }
-  };
-
-  peer.ondatachannel = (event) => {
-    channelRef.current = event.channel;
-
-    event.channel.onmessage = (e) => {
-      setChat((c) => [...c, "对方: " + e.data]);
+    peer.onicecandidate = (e) => {
+      if (e.candidate) {
+        socketRef.current?.emit("ice-candidate", {
+          to: remoteId,
+          candidate: e.candidate,
+        });
+      }
     };
-  };
 
-  peerRef.current = peer;
-}
+    peer.ondatachannel = (event) => {
+      channelRef.current = event.channel;
+
+      event.channel.onopen = () => {
+        setChat((c) => [...c, "✅ 连接成功"]);
+      };
+
+      event.channel.onmessage = (e) => {
+        setChat((c) => [...c, "对方: " + e.data]);
+      };
+    };
+
+    peerRef.current = peer;
+  }
 
   async function connectToUser() {
     createPeer(targetId);
@@ -94,6 +99,10 @@ export default function Home() {
       peerRef.current.createDataChannel("chat");
 
     channelRef.current = channel;
+
+    channel.onopen = () => {
+      setChat((c) => [...c, "✅ 连接成功"]);
+    };
 
     channel.onmessage = (e) => {
       setChat((c) => [...c, "对方: " + e.data]);
@@ -113,7 +122,18 @@ export default function Home() {
   function sendMessage() {
     if (!message) return;
 
-    channelRef.current?.send(message);
+    if (
+      !channelRef.current ||
+      channelRef.current.readyState !== "open"
+    ) {
+      setChat((c) => [
+        ...c,
+        "⚠️ 还没连接成功，不能发送",
+      ]);
+      return;
+    }
+
+    channelRef.current.send(message);
 
     setChat((c) => [...c, "我: " + message]);
     setMessage("");
