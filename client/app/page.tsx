@@ -58,16 +58,12 @@ export default function Home() {
   }, []);
 
   function createPeer(remoteId: string) {
-    const peer = new RTCPeerConnection();
-
-    peer.onicecandidate = (e) => {
-      if (e.candidate) {
-        socketRef.current?.emit("ice-candidate", {
-          to: remoteId,
-          candidate: e.candidate,
-        });
-      }
-    };
+  const peer = new RTCPeerConnection({
+    iceServers: [
+      { urls: "stun:stun.l.google.com:19302" },
+      { urls: "stun:global.stun.twilio.com:3478" }
+    ]
+  });
 
     peer.ondatachannel = (event) => {
       channelRef.current = event.channel;
