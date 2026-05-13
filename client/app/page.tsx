@@ -65,16 +65,25 @@ export default function Home() {
     ]
   });
 
-    peer.ondatachannel = (event) => {
-      channelRef.current = event.channel;
+  peer.onicecandidate = (e) => {
+    if (e.candidate) {
+      socketRef.current?.emit("ice-candidate", {
+        to: remoteId,
+        candidate: e.candidate,
+      });
+    }
+  };
 
-      event.channel.onmessage = (e) => {
-        setChat((c) => [...c, "对方: " + e.data]);
-      };
+  peer.ondatachannel = (event) => {
+    channelRef.current = event.channel;
+
+    event.channel.onmessage = (e) => {
+      setChat((c) => [...c, "对方: " + e.data]);
     };
+  };
 
-    peerRef.current = peer;
-  }
+  peerRef.current = peer;
+}
 
   async function connectToUser() {
     createPeer(targetId);
